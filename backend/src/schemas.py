@@ -7,8 +7,8 @@ from src.models import RoleEnum, AttendanceStatus
 # --- Auth ---
 class SignupRequest(BaseModel):
     name: str
-    email: EmailStr
-    password: str
+    email: str
+    age: int
     role: RoleEnum
     institution_id: Optional[int] = None
 
