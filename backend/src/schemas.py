@@ -4,12 +4,12 @@ from datetime import date, time, datetime
 from src.models import RoleEnum, AttendanceStatus
 
 
-# --- Auth ---
 class SignupRequest(BaseModel):
     name: str
-    email: str
+    email: EmailStr
     age: int
     role: RoleEnum
+    password: str   # ✅ ADD THIS
     institution_id: Optional[int] = None
 
     @field_validator("password")
