@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SkillBridge — Attendance Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1f2e47;
+    --accent: #38bdf8;
+    --accent2: #818cf8;
+    --accent3: #34d399;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BACKGROUND EFFECT */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(56,189,248,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 80%, rgba(129,140,248,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px;
+    height: 60px;
+    background: rgba(10,15,30,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 1.2rem;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .nav-logo span { color: var(--text); }
+  .nav-user {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 0.85rem; color: var(--muted);
+  }
+  .nav-user strong { color: var(--text); font-weight: 500; }
+  .role-badge {
+    padding: 2px 10px; border-radius: 20px;
+    font-size: 0.7rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .role-student   { background: rgba(52,211,153,0.15); color: var(--accent3); border: 1px solid rgba(52,211,153,0.3); }
+  .role-trainer   { background: rgba(56,189,248,0.15); color: var(--accent);  border: 1px solid rgba(56,189,248,0.3); }
+  .role-institution { background: rgba(129,140,248,0.15); color: var(--accent2); border: 1px solid rgba(129,140,248,0.3); }
+  .role-programme_manager { background: rgba(251,191,36,0.15); color: var(--warn); border: 1px solid rgba(251,191,36,0.3); }
+  .role-monitoring_officer { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
+  #btn-logout {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); padding: 5px 14px; border-radius: 8px;
+    cursor: pointer; font-size: 0.8rem; font-family: inherit;
+    transition: all 0.2s;
+  }
+  #btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ── LAYOUT ── */
+  #app { position: relative; z-index: 1; padding-top: 60px; min-height: 100vh; display: flex; }
+
+  /* ── SIDEBAR ── */
+  aside {
+    width: 220px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    min-height: calc(100vh - 60px);
+    padding: 24px 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: 10px;
+    cursor: pointer; font-size: 0.875rem; color: var(--muted);
+    transition: all 0.15s; user-select: none;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(56,189,248,0.12); color: var(--accent); }
+  .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+
+  /* ── MAIN CONTENT ── */
+  main { flex: 1; padding: 32px; overflow-y: auto; max-width: 1100px; }
+
+  /* ── PAGES ── */
+  .page { display: none; }
+  .page.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── LOGIN PAGE ── */
+  #login-page {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+  }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+  }
+  .login-logo {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.8rem;
+    color: var(--accent); text-align: center; margin-bottom: 6px;
+  }
+  .login-logo span { color: var(--text); }
+  .login-sub { text-align: center; color: var(--muted); font-size: 0.875rem; margin-bottom: 36px; }
+  .tab-row { display: flex; background: var(--surface2); border-radius: 10px; padding: 4px; margin-bottom: 28px; }
+  .tab-btn {
+    flex: 1; padding: 8px; border: none; background: transparent;
+    color: var(--muted); border-radius: 8px; cursor: pointer;
+    font-family: inherit; font-size: 0.875rem; font-weight: 500;
+    transition: all 0.15s;
+  }
+  .tab-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+
+  /* ── FORM ELEMENTS ── */
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  input, select, textarea {
+    width: 100%; padding: 11px 14px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 10px;
+    font-family: inherit; font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(56,189,248,0.1);
+  }
+  select option { background: var(--surface2); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 11px 22px; border-radius: 10px; border: none;
+    font-family: inherit; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-primary {
+    background: var(--accent); color: #0a0f1e;
+    box-shadow: 0 4px 16px rgba(56,189,248,0.25);
+  }
+  .btn-primary:hover { background: #7dd3fc; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(56,189,248,0.35); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
+  .btn-danger:hover { background: rgba(248,113,113,0.25); }
+  .btn-success { background: rgba(52,211,153,0.15); color: var(--accent3); border: 1px solid rgba(52,211,153,0.3); }
+  .btn-success:hover { background: rgba(52,211,153,0.25); }
+  .btn-block { width: 100%; justify-content: center; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+  /* ── ALERT ── */
+  .alert {
+    padding: 12px 16px; border-radius: 10px; font-size: 0.875rem;
+    margin-bottom: 16px; display: none;
+  }
+  .alert.error { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3); color: var(--danger); }
+  .alert.success { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); color: var(--accent3); }
+  .alert.show { display: block; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { margin-bottom: 28px; }
+  .page-header h1 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.6rem; margin-bottom: 4px; }
+  .page-header p { color: var(--muted); font-size: 0.875rem; }
+
+  /* ── STAT CARDS ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 700; }
+  .stat-value.blue { color: var(--accent); }
+  .stat-value.green { color: var(--accent3); }
+  .stat-value.purple { color: var(--accent2); }
+  .stat-value.yellow { color: var(--warn); }
+  .stat-value.red { color: var(--danger); }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.05rem;
+    margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  thead th {
+    background: var(--surface2); padding: 12px 16px;
+    text-align: left; font-weight: 600; color: var(--muted);
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  tbody td { padding: 12px 16px; border-top: 1px solid var(--border); }
+  tbody tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* ── STATUS PILL ── */
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .pill-present { background: rgba(52,211,153,0.15); color: var(--accent3); border: 1px solid rgba(52,211,153,0.3); }
+  .pill-absent  { background: rgba(248,113,113,0.15); color: var(--danger);  border: 1px solid rgba(248,113,113,0.3); }
+  .pill-late    { background: rgba(251,191,36,0.15);  color: var(--warn);    border: 1px solid rgba(251,191,36,0.3); }
+
+  /* ── GRID 2 ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* ── LOADER ── */
+  .loader {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-state { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.875rem; padding: 20px 0; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 48px 20px; color: var(--muted); }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty p { font-size: 0.875rem; }
+
+  /* ── HINT BOX ── */
+  .hint {
+    background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.2);
+    border-radius: 10px; padding: 14px 16px; font-size: 0.82rem; color: var(--muted);
+    margin-bottom: 20px; line-height: 1.6;
+  }
+  .hint strong { color: var(--accent); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px); z-index: 200;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px; width: 100%; max-width: 440px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.1rem; margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+  /* ── SIDEBAR HIDDEN for login ── */
+  body.logged-out aside, body.logged-out nav .nav-user { display: none; }
+  body.logged-out #app { padding-top: 0; }
+  body.logged-out main { padding: 0; max-width: 100%; }
+  body.logged-in #login-page { display: none; }
+</style>
+</head>
+<body class="logged-out">
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo">Skill<span>Bridge</span></div>
+  <div class="nav-user" id="nav-user" style="display:none">
+    <span>👤 <strong id="nav-name"></strong></span>
+    <span id="nav-role-badge" class="role-badge"></span>
+    <button id="btn-logout">Sign out</button>
+  </div>
+</nav>
+
+<div id="app">
+  <!-- ── SIDEBAR ── -->
+  <aside id="sidebar" style="display:none">
+    <div id="sidebar-nav"></div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main id="main-content">
+
+    <!-- ══ LOGIN PAGE ══ -->
+    <div id="login-page">
+      <div class="login-card">
+        <div class="login-logo">Skill<span>Bridge</span></div>
+        <div class="login-sub">State-Level Skilling Attendance Portal</div>
+
+        <div class="tab-row">
+          <button class="tab-btn active" onclick="switchAuthTab('login')">Sign In</button>
+          <button class="tab-btn" onclick="switchAuthTab('signup')">Sign Up</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <div id="login-form-wrap">
+          <div id="login-alert" class="alert error"></div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="login-email" placeholder="your@email.com" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="••••••••" />
+          </div>
+          <button class="btn btn-primary btn-block" id="btn-login" onclick="doLogin()">Sign In →</button>
+
+          <div style="margin-top:24px; border-top: 1px solid var(--border); padding-top:20px;">
+            <p style="font-size:0.78rem; color:var(--muted); margin-bottom:12px;">Quick fill — test accounts:</p>
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+              <button class="btn btn-secondary" style="font-size:0.72rem;padding:5px 10px" onclick="fillCreds('aditya@student.in','student123')">Student</button>
+              <button class="btn btn-secondary" style="font-size:0.72rem;padding:5px 10px" onclick="fillCreds('arjun@skillbridge.in','trainer123')">Trainer</button>
+              <button class="btn btn-secondary" style="font-size:0.72rem;padding:5px 10px" onclick="fillCreds('admin1@skillbridge.in','admin123')">Institution</button>
+              <button class="btn btn-secondary" style="font-size:0.72rem;padding:5px 10px" onclick="fillCreds('pm@skillbridge.in','pm123456')">Prog. Mgr</button>
+              <button class="btn btn-secondary" style="font-size:0.72rem;padding:5px 10px" onclick="fillCreds('monitor@skillbridge.in','monitor123')">Monitor</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIGNUP FORM -->
+        <div id="signup-form-wrap" style="display:none">
+          <div id="signup-alert" class="alert error"></div>
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="su-name" placeholder="Your full name" />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="su-email" placeholder="your@email.com" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="su-password" placeholder="Min 8 chars" />
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <select id="su-role">
+              <option value="student">Student</option>
+              <option value="trainer">Trainer</option>
+              <option value="institution">Institution Admin</option>
+              <option value="programme_manager">Programme Manager</option>
+              <option value="monitoring_officer">Monitoring Officer</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-block" onclick="doSignup()">Create Account →</button>
+        </div>
+      </div>
+    </div><!-- /login-page -->
+
+    <!-- ══ DASHBOARD PAGE ══ -->
+    <div id="page-dashboard" class="page">
+      <div class="page-header">
+        <h1 id="dash-title">Dashboard</h1>
+        <p id="dash-sub">Welcome back!</p>
+      </div>
+      <div id="dash-stats" class="stat-grid"></div>
+      <div id="dash-content"></div>
+    </div>
+
+    <!-- ══ BATCHES PAGE ══ -->
+    <div id="page-batches" class="page">
+      <div class="page-header">
+        <h1>Batches</h1>
+        <p>Manage training batches</p>
+      </div>
+      <div id="batches-content"></div>
+    </div>
+
+    <!-- ══ SESSIONS PAGE ══ -->
+    <div id="page-sessions" class="page">
+      <div class="page-header">
+        <h1>Sessions</h1>
+        <p>Training sessions & attendance</p>
+      </div>
+      <div id="sessions-content"></div>
+    </div>
+
+    <!-- ══ ATTENDANCE PAGE ══ -->
+    <div id="page-attendance" class="page">
+      <div class="page-header">
+        <h1>Mark Attendance</h1>
+        <p>Record your attendance for a session</p>
+      </div>
+      <div id="attendance-content"></div>
+    </div>
+
+    <!-- ══ PROGRAMME PAGE ══ -->
+    <div id="page-programme" class="page">
+      <div class="page-header">
+        <h1>Programme Summary</h1>
+        <p>Programme-wide statistics</p>
+      </div>
+      <div id="programme-content"></div>
+    </div>
+
+    <!-- ══ MONITORING PAGE ══ -->
+    <div id="page-monitoring" class="page">
+      <div class="page-header">
+        <h1>Monitoring</h1>
+        <p>Full attendance monitoring view</p>
+      </div>
+      <div id="monitoring-content"></div>
+    </div>
+
+    <!-- ══ INVITE PAGE ══ -->
+    <div id="page-invite" class="page">
+      <div class="page-header">
+        <h1>Batch Invites</h1>
+        <p>Generate invite links for students</p>
+      </div>
+      <div id="invite-content"></div>
+    </div>
+
+    <!-- ══ JOIN BATCH PAGE ══ -->
+    <div id="page-join" class="page">
+      <div class="page-header">
+        <h1>Join a Batch</h1>
+        <p>Enter an invite token to enrol</p>
+      </div>
+      <div id="join-content"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-box">
+    <div class="modal-title" id="modal-title"></div>
+    <div id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const API = 'http://localhost:8000';
+let token = localStorage.getItem('sb_token') || null;
+let currentUser = JSON.parse(localStorage.getItem('sb_user') || 'null');
+let monitoringToken = null;
+
+// ══════════════════════════════════════════
+// API HELPER
+// ══════════════════════════════════════════
+async function api(method, path, body = null, useMonToken = false) {
+  const t = useMonToken ? monitoringToken : token;
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
+  if (t) opts.headers['Authorization'] = 'Bearer ' + t;
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || 'Request failed');
+  return data;
+}
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+function switchAuthTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (i===0) === (tab==='login')));
+  document.getElementById('login-form-wrap').style.display  = tab === 'login'  ? 'block' : 'none';
+  document.getElementById('signup-form-wrap').style.display = tab === 'signup' ? 'block' : 'none';
+}
+
+function fillCreds(email, pass) {
+  document.getElementById('login-email').value = email;
+  document.getElementById('login-password').value = pass;
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  const alert = document.getElementById('login-alert');
+  alert.className = 'alert error'; alert.style.display = 'none';
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.innerHTML = '<span class="loader"></span> Signing in…';
+  try {
+    const data = await api('POST', '/auth/login', { email, password: pass });
+    token = data.access_token;
+    localStorage.setItem('sb_token', token);
+    // decode user info from token
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    currentUser = { id: payload.user_id, role: payload.role, email };
+    localStorage.setItem('sb_user', JSON.stringify(currentUser));
+    afterLogin();
+  } catch(e) {
+    alert.textContent = e.message; alert.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'Sign In →';
+  }
+}
+
+async function doSignup() {
+  const name  = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const pass  = document.getElementById('su-password').value;
+  const role  = document.getElementById('su-role').value;
+  const alert = document.getElementById('signup-alert');
+  alert.className = 'alert error'; alert.style.display = 'none';
+  try {
+    const data = await api('POST', '/auth/signup', { name, email, password: pass, role });
+    token = data.access_token;
+    localStorage.setItem('sb_token', token);
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    currentUser = { id: payload.user_id, role, email, name };
+    localStorage.setItem('sb_user', JSON.stringify(currentUser));
+    afterLogin();
+  } catch(e) {
+    alert.textContent = e.message; alert.style.display = 'block';
+  }
+}
+
+function logout() {
+  token = null; currentUser = null; monitoringToken = null;
+  localStorage.removeItem('sb_token'); localStorage.removeItem('sb_user');
+  document.body.className = 'logged-out';
+  document.getElementById('nav-user').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'none';
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+}
+
+// ══════════════════════════════════════════
+// AFTER LOGIN — BUILD UI
+// ══════════════════════════════════════════
+function afterLogin() {
+  document.body.className = 'logged-in';
+  document.getElementById('nav-user').style.display = 'flex';
+  document.getElementById('sidebar').style.display = 'flex';
+  document.getElementById('nav-name').textContent = currentUser.name || currentUser.email.split('@')[0];
+  const rb = document.getElementById('nav-role-badge');
+  rb.textContent = currentUser.role.replace('_', ' ');
+  rb.className = 'role-badge role-' + currentUser.role;
+  buildSidebar();
+  navigateTo('dashboard');
+}
+
+const PAGES = {
+  student: [
+    { id: 'dashboard', icon: '⊞', label: 'Dashboard' },
+    { id: 'join',      icon: '🔗', label: 'Join Batch' },
+    { id: 'attendance',icon: '✅', label: 'Mark Attendance' },
+  ],
+  trainer: [
+    { id: 'dashboard', icon: '⊞', label: 'Dashboard' },
+    { id: 'batches',   icon: '📦', label: 'Batches' },
+    { id: 'sessions',  icon: '📅', label: 'Sessions' },
+    { id: 'invite',    icon: '✉️', label: 'Invites' },
+  ],
+  institution: [
+    { id: 'dashboard', icon: '⊞', label: 'Dashboard' },
+    { id: 'batches',   icon: '📦', label: 'Batch Summaries' },
+  ],
+  programme_manager: [
+    { id: 'dashboard',  icon: '⊞', label: 'Dashboard' },
+    { id: 'programme',  icon: '📊', label: 'Programme' },
+  ],
+  monitoring_officer: [
+    { id: 'dashboard',  icon: '⊞', label: 'Dashboard' },
+    { id: 'monitoring', icon: '🔍', label: 'Monitoring' },
+  ],
+};
+
+function buildSidebar() {
+  const role = currentUser.role;
+  const items = PAGES[role] || PAGES['student'];
+  document.getElementById('sidebar-nav').innerHTML = items.map(p =>
+    `<div class="nav-item" id="nav-${p.id}" onclick="navigateTo('${p.id}')">
+       <span class="icon">${p.icon}</span>${p.label}
+     </div>`
+  ).join('');
+}
+
+function navigateTo(pageId) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const ni = document.getElementById('nav-' + pageId);
+  if (ni) ni.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById('page-' + pageId);
+  if (pg) { pg.classList.add('active'); loadPage(pageId); }
+}
+
+// ══════════════════════════════════════════
+// PAGE LOADERS
+// ══════════════════════════════════════════
+function loadPage(id) {
+  const role = currentUser.role;
+  if (id === 'dashboard')  loadDashboard(role);
+  if (id === 'batches')    loadBatches(role);
+  if (id === 'sessions')   loadSessions();
+  if (id === 'attendance') loadAttendancePage();
+  if (id === 'programme')  loadProgramme();
+  if (id === 'monitoring') loadMonitoring();
+  if (id === 'invite')     loadInvite();
+  if (id === 'join')       loadJoin();
+}
+
+// ── DASHBOARD ──
+async function loadDashboard(role) {
+  document.getElementById('dash-title').textContent =
+    role === 'student' ? 'My Dashboard' :
+    role === 'trainer' ? 'Trainer Dashboard' :
+    role === 'institution' ? 'Institution Dashboard' :
+    role === 'programme_manager' ? 'Programme Manager' : 'Monitoring Dashboard';
+  document.getElementById('dash-sub').textContent = `Logged in as ${currentUser.email}`;
+
+  const statsEl = document.getElementById('dash-stats');
+  const contentEl = document.getElementById('dash-content');
+
+  if (role === 'programme_manager') {
+    try {
+      const d = await api('GET', '/programme/summary');
+      statsEl.innerHTML = `
+        ${stat('Institutions', d.total_institutions, 'blue')}
+        ${stat('Batches', d.total_batches, 'purple')}
+        ${stat('Students', d.total_students, 'green')}
+        ${stat('Sessions', d.total_sessions, 'yellow')}
+        ${stat('Present', d.present_count, 'green')}
+        ${stat('Absent', d.absent_count, 'red')}
+        ${stat('Late', d.late_count, 'yellow')}
+      `;
+      contentEl.innerHTML = '';
+    } catch(e) { statsEl.innerHTML = errCard(e.message); }
+  } else {
+    statsEl.innerHTML = `
+      ${stat('Role', currentUser.role.replace('_',' ').toUpperCase(), 'blue')}
+    `;
+    contentEl.innerHTML = `<div class="hint">👋 Use the sidebar to navigate. Your role is <strong>${currentUser.role}</strong>.</div>`;
+  }
+}
+
+function stat(label, value, color) {
+  return `<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value ${color}">${value}</div></div>`;
+}
+
+// ── BATCHES ──
+async function loadBatches(role) {
+  const el = document.getElementById('batches-content');
+  el.innerHTML = loading();
+
+  if (role === 'trainer' || role === 'institution') {
+    let html = '';
+
+    if (role === 'trainer') {
+      html += `
+        <div class="card">
+          <div class="card-title">📦 Create New Batch</div>
+          <div class="grid2">
+            <div class="form-group"><label>Batch Name</label><input id="cb-name" placeholder="e.g. Batch A 2024"/></div>
+            <div class="form-group"><label>Institution ID</label><input id="cb-inst" type="number" placeholder="1"/></div>
+          </div>
+          <div id="cb-alert" class="alert error"></div>
+          <button class="btn btn-primary" onclick="createBatch()">Create Batch</button>
+        </div>`;
+    }
+
+    if (role === 'institution') {
+      html += `
+        <div class="card">
+          <div class="card-title">📊 Batch Summary</div>
+          <div class="grid2">
+            <div class="form-group"><label>Batch ID</label><input id="bs-id" type="number" placeholder="1"/></div>
+          </div>
+          <div id="bs-alert" class="alert error"></div>
+          <button class="btn btn-primary" onclick="fetchBatchSummary()">Get Summary</button>
+          <div id="bs-result" style="margin-top:16px"></div>
+        </div>`;
+    }
+
+    el.innerHTML = html || '<div class="empty"><div class="empty-icon">📦</div><p>No batch actions for your role.</p></div>';
+  }
+}
+
+async function createBatch() {
+  const name = document.getElementById('cb-name').value.trim();
+  const inst_id = parseInt(document.getElementById('cb-inst').value);
+  const alertEl = document.getElementById('cb-alert');
+  alertEl.style.display = 'none';
+  try {
+    const d = await api('POST', '/batches', { name, institution_id: inst_id });
+    alertEl.className = 'alert success';
+    alertEl.textContent = `✅ Batch "${d.name}" created! ID: ${d.id}`;
+    alertEl.style.display = 'block';
+  } catch(e) {
+    alertEl.className = 'alert error';
+    alertEl.textContent = e.message; alertEl.style.display = 'block';
+  }
+}
+
+async function fetchBatchSummary() {
+  const id = document.getElementById('bs-id').value;
+  const alertEl = document.getElementById('bs-alert');
+  const res = document.getElementById('bs-result');
+  alertEl.style.display = 'none'; res.innerHTML = loading();
+  try {
+    const d = await api('GET', `/batches/${id}/summary`);
+    res.innerHTML = `
+      <div class="stat-grid">
+        ${stat('Students', d.total_students, 'blue')}
+        ${stat('Sessions', d.total_sessions, 'purple')}
+        ${stat('Present', d.present_count, 'green')}
+        ${stat('Absent', d.absent_count, 'red')}
+        ${stat('Late', d.late_count, 'yellow')}
+      </div>`;
+  } catch(e) {
+    res.innerHTML = '';
+    alertEl.className = 'alert error'; alertEl.textContent = e.message; alertEl.style.display = 'block';
+  }
+}
+
+// ── SESSIONS ──
+async function loadSessions() {
+  const el = document.getElementById('sessions-content');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">📅 Create Session</div>
+      <div class="grid2">
+        <div class="form-group"><label>Title</label><input id="cs-title" placeholder="Python OOP"/></div>
+        <div class="form-group"><label>Batch ID</label><input id="cs-batch" type="number" placeholder="1"/></div>
+        <div class="form-group"><label>Date</label><input id="cs-date" type="date"/></div>
+        <div class="form-group"><label>Start Time</label><input id="cs-start" type="time"/></div>
+        <div class="form-group"><label>End Time</label><input id="cs-end" type="time"/></div>
+      </div>
+      <div id="cs-alert" class="alert error"></div>
+      <button class="btn btn-primary" onclick="createSession()">Create Session</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 View Session Attendance</div>
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <div class="form-group" style="margin:0;flex:1"><label>Session ID</label><input id="sa-id" type="number" placeholder="1"/></div>
+        <button class="btn btn-secondary" onclick="fetchSessionAttendance()">View</button>
+      </div>
+      <div id="sa-result" style="margin-top:16px"></div>
+    </div>
+  `;
+}
+
+async function createSession() {
+  const alertEl = document.getElementById('cs-alert');
+  alertEl.style.display = 'none';
+  try {
+    const d = await api('POST', '/sessions', {
+      title: document.getElementById('cs-title').value,
+      batch_id: parseInt(document.getElementById('cs-batch').value),
+      date: document.getElementById('cs-date').value,
+      start_time: document.getElementById('cs-start').value + ':00',
+      end_time: document.getElementById('cs-end').value + ':00',
+    });
+    alertEl.className = 'alert success';
+    alertEl.textContent = `✅ Session "${d.title}" created! ID: ${d.id}`;
+    alertEl.style.display = 'block';
+  } catch(e) {
+    alertEl.className = 'alert error'; alertEl.textContent = e.message; alertEl.style.display = 'block';
+  }
+}
+
+async function fetchSessionAttendance() {
+  const id = document.getElementById('sa-id').value;
+  const res = document.getElementById('sa-result');
+  res.innerHTML = loading();
+  try {
+    const d = await api('GET', `/sessions/${id}/attendance`);
+    if (!d.records.length) { res.innerHTML = empty('No attendance records yet'); return; }
+    res.innerHTML = `
+      <div class="stat-grid" style="margin-bottom:16px">
+        ${stat('Total', d.total, 'blue')}
+        ${stat('Present', d.records.filter(r=>r.status==='present').length, 'green')}
+        ${stat('Absent',  d.records.filter(r=>r.status==='absent').length, 'red')}
+        ${stat('Late',    d.records.filter(r=>r.status==='late').length, 'yellow')}
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Time</th></tr></thead>
+          <tbody>${d.records.map(r=>`
+            <tr>
+              <td>${r.student_name}</td>
+              <td style="color:var(--muted)">${r.student_email}</td>
+              <td><span class="pill pill-${r.status}">${r.status}</span></td>
+              <td style="color:var(--muted);font-size:0.8rem">${new Date(r.marked_at).toLocaleString()}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(e) { res.innerHTML = errCard(e.message); }
+}
+
+// ── ATTENDANCE (STUDENT) ──
+function loadAttendancePage() {
+  document.getElementById('attendance-content').innerHTML = `
+    <div class="card">
+      <div class="card-title">✅ Mark My Attendance</div>
+      <div class="grid2">
+        <div class="form-group"><label>Session ID</label><input id="att-session" type="number" placeholder="1"/></div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="att-status">
+            <option value="present">Present</option>
+            <option value="absent">Absent</option>
+            <option value="late">Late</option>
+          </select>
+        </div>
+      </div>
+      <div id="att-alert" class="alert error"></div>
+      <button class="btn btn-primary" onclick="markAttendance()">Mark Attendance</button>
+    </div>
+  `;
+}
+
+async function markAttendance() {
+  const alertEl = document.getElementById('att-alert');
+  alertEl.style.display = 'none';
+  try {
+    await api('POST', '/attendance/mark', {
+      session_id: parseInt(document.getElementById('att-session').value),
+      status: document.getElementById('att-status').value,
+    });
+    alertEl.className = 'alert success';
+    alertEl.textContent = '✅ Attendance marked successfully!';
+    alertEl.style.display = 'block';
+  } catch(e) {
+    alertEl.className = 'alert error'; alertEl.textContent = e.message; alertEl.style.display = 'block';
+  }
+}
+
+// ── PROGRAMME ──
+async function loadProgramme() {
+  const el = document.getElementById('programme-content');
+  el.innerHTML = loading();
+  try {
+    const d = await api('GET', '/programme/summary');
+    el.innerHTML = `
+      <div class="stat-grid">
+        ${stat('Institutions', d.total_institutions, 'blue')}
+        ${stat('Batches', d.total_batches, 'purple')}
+        ${stat('Students', d.total_students, 'green')}
+        ${stat('Sessions', d.total_sessions, 'yellow')}
+        ${stat('Attendance Records', d.total_attendance_marked, 'blue')}
+        ${stat('Present', d.present_count, 'green')}
+        ${stat('Absent', d.absent_count, 'red')}
+        ${stat('Late', d.late_count, 'yellow')}
+      </div>
+      <div class="card">
+        <div class="card-title">🏛️ Institution Summary</div>
+        <div style="display:flex;gap:10px;align-items:flex-end">
+          <div class="form-group" style="margin:0;flex:1"><label>Institution ID</label><input id="inst-id" type="number" placeholder="1"/></div>
+          <button class="btn btn-secondary" onclick="fetchInstSummary()">View</button>
+        </div>
+        <div id="inst-result" style="margin-top:16px"></div>
+      </div>
+    `;
+  } catch(e) { el.innerHTML = errCard(e.message); }
+}
+
+async function fetchInstSummary() {
+  const id = document.getElementById('inst-id').value;
+  const res = document.getElementById('inst-result');
+  res.innerHTML = loading();
+  try {
+    const d = await api('GET', `/institutions/${id}/summary`);
+    let batchRows = d.batches.map(b => `
+      <tr>
+        <td>${b.batch_name}</td>
+        <td>${b.total_students}</td>
+        <td>${b.total_sessions}</td>
+        <td><span class="pill pill-present">${b.present_count}</span></td>
+        <td><span class="pill pill-absent">${b.absent_count}</span></td>
+        <td><span class="pill pill-late">${b.late_count}</span></td>
+      </tr>`).join('');
+    res.innerHTML = `<h3 style="margin-bottom:12px;font-family:'Syne',sans-serif">${d.institution_name}</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Batch</th><th>Students</th><th>Sessions</th><th>Present</th><th>Absent</th><th>Late</th></tr></thead>
+        <tbody>${batchRows}</tbody>
+      </table></div>`;
+  } catch(e) { res.innerHTML = errCard(e.message); }
+}
+
+// ── MONITORING ──
+async function loadMonitoring() {
+  const el = document.getElementById('monitoring-content');
+  el.innerHTML = `
+    <div class="hint">
+      <strong>Two-step authentication required.</strong><br>
+      Step 1: Your login token is already available.<br>
+      Step 2: Exchange it for a monitoring token using the API key below.
+    </div>
+    <div class="card">
+      <div class="card-title">🔑 Get Monitoring Token</div>
+      <div class="form-group"><label>Monitoring API Key</label><input id="mon-key" value="sk-monitor-hardcoded-key-for-testing"/></div>
+      <div id="mon-alert" class="alert error"></div>
+      <button class="btn btn-primary" onclick="getMonitoringToken()">Exchange Token</button>
+    </div>
+    <div id="mon-data"></div>
+  `;
+}
+
+async function getMonitoringToken() {
+  const key = document.getElementById('mon-key').value;
+  const alertEl = document.getElementById('mon-alert');
+  alertEl.style.display = 'none';
+  try {
+    const d = await api('POST', '/auth/monitoring-token', { key });
+    monitoringToken = d.access_token;
+    alertEl.className = 'alert success';
+    alertEl.textContent = '✅ Monitoring token obtained! Loading data…';
+    alertEl.style.display = 'block';
+    fetchMonitoringData();
+  } catch(e) {
+    alertEl.className = 'alert error'; alertEl.textContent = e.message; alertEl.style.display = 'block';
+  }
+}
+
+async function fetchMonitoringData() {
+  const el = document.getElementById('mon-data');
+  el.innerHTML = loading();
+  try {
+    const d = await api('GET', '/monitoring/attendance', null, true);
+    if (!d.records.length) { el.innerHTML = empty('No records'); return; }
+    el.innerHTML = `
+      <div class="card">
+        <div class="card-title">📋 All Attendance Records <span style="color:var(--muted);font-weight:400;font-size:0.85rem">${d.total} total</span></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Student</th><th>Session</th><th>Batch</th><th>Institution</th><th>Status</th><th>Time</th></tr></thead>
+          <tbody>${d.records.map(r=>`
+            <tr>
+              <td>${r.student_name}</td>
+              <td style="color:var(--muted)">${r.session_title}</td>
+              <td style="color:var(--muted)">${r.batch_name}</td>
+              <td style="color:var(--muted)">${r.institution_name}</td>
+              <td><span class="pill pill-${r.status}">${r.status}</span></td>
+              <td style="color:var(--muted);font-size:0.8rem">${new Date(r.marked_at).toLocaleString()}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table></div>
+      </div>`;
+  } catch(e) { el.innerHTML = errCard(e.message); }
+}
+
+// ── INVITE (TRAINER) ──
+function loadInvite() {
+  document.getElementById('invite-content').innerHTML = `
+    <div class="card">
+      <div class="card-title">✉️ Generate Invite Link</div>
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <div class="form-group" style="margin:0;flex:1"><label>Batch ID</label><input id="inv-batch" type="number" placeholder="1"/></div>
+        <button class="btn btn-primary" onclick="generateInvite()">Generate</button>
+      </div>
+      <div id="inv-alert" class="alert error" style="margin-top:12px"></div>
+      <div id="inv-result" style="margin-top:16px"></div>
+    </div>
+  `;
+}
+
+async function generateInvite() {
+  const id = document.getElementById('inv-batch').value;
+  const alertEl = document.getElementById('inv-alert');
+  const res = document.getElementById('inv-result');
+  alertEl.style.display = 'none'; res.innerHTML = '';
+  try {
+    const d = await api('POST', `/batches/${id}/invite`);
+    res.innerHTML = `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Invite Token</div>
+        <div style="font-family:monospace;font-size:0.85rem;word-break:break-all;color:var(--accent)">${d.token}</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:8px">Expires: ${new Date(d.expires_at).toLocaleString()}</div>
+        <button class="btn btn-secondary" style="margin-top:12px;font-size:0.8rem;padding:6px 12px" onclick="navigator.clipboard.writeText('${d.token}');this.textContent='✅ Copied!'">Copy Token</button>
+      </div>`;
+  } catch(e) {
+    alertEl.className = 'alert error'; alertEl.textContent = e.message; alertEl.style.display = 'block';
+  }
+}
+
+// ── JOIN BATCH (STUDENT) ──
+function loadJoin() {
+  document.getElementById('join-content').innerHTML = `
+    <div class="card">
+      <div class="card-title">🔗 Join Batch with Invite Token</div>
+      <div class="form-group"><label>Invite Token</label><input id="join-token" placeholder="Paste your invite token here"/></div>
+      <div id="join-alert" class="alert error"></div>
+      <button class="btn btn-primary" onclick="joinBatch()">Join Batch</button>
+    </div>
+  `;
+}
+
+async function joinBatch() {
+  const t = document.getElementById('join-token').value.trim();
+  const alertEl = document.getElementById('join-alert');
+  alertEl.style.display = 'none';
+  try {
+    const d = await api('POST', '/batches/join', { token: t });
+    alertEl.className = 'alert success';
+    alertEl.textContent = `✅ ${d.message} (Batch ID: ${d.batch_id})`;
+    alertEl.style.display = 'block';
+  } catch(e) {
+    alertEl.className = 'alert error'; alertEl.textContent = e.message; alertEl.style.display = 'block';
+  }
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function loading() {
+  return `<div class="loading-state"><span class="loader"></span> Loading…</div>`;
+}
+function empty(msg) {
+  return `<div class="empty"><div class="empty-icon">📭</div><p>${msg}</p></div>`;
+}
+function errCard(msg) {
+  return `<div class="alert error show">${msg}</div>`;
+}
+
+// ══════════════════════════════════════════
+// EVENTS
+// ══════════════════════════════════════════
+document.getElementById('btn-logout').addEventListener('click', logout);
+
+// Enter key on login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.body.classList.contains('logged-out')) doLogin();
+});
+
+// ══════════════════════════════════════════
+// INIT — restore session if token exists
+// ══════════════════════════════════════════
+if (token && currentUser) {
+  afterLogin();
+}
+</script>
+</body>
+</html>
